@@ -2,7 +2,7 @@
 
 This program uses a pretrained MNIST Classification model to predict a user-drawn digit through Flask.
 
-<img src="images/demo.gif">
+<img src="images/mov.gif">
 
 
 ## Setup
