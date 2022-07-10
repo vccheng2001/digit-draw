@@ -1,64 +1,80 @@
 import flask
-from flask import Flask,render_template,url_for,request
 import pickle
 import base64
 import numpy as np
 import cv2
-import tensorflow as tf
+import torch
+import torchvision
+import replicate
+import json 
+from pathlib import Path
 
-#Initialize the useless part of the base64 encoded image.
-init_Base64 = 21;
+from flask import (
+    Flask,
+    jsonify,
+    render_template,
+    send_from_directory,
+    request,
+)
 
-#Our dictionary
-label_dict = {0:'Cat', 1:'Giraffe', 2:'Sheep', 3:'Bat', 4:'Octopus', 5:'Camel'}
 
+# Initialize the useless part of the base64 encoded image.
+init_Base64 = 21
 
-#Initializing the Default Graph (prevent errors)
-graph = tf.get_default_graph()
-
-# Use pickle to load in the pre-trained model.
-with open(f'model_cnn.pkl', 'rb') as f:
-        model = pickle.load(f)
-
-#Initializing new Flask instance. Find the html template in "templates".
+# Initializing new Flask instance. Find the html template in "templates".
 app = flask.Flask(__name__, template_folder='templates')
 
-#First route : Render the initial drawing template
+# First route : Render the initial drawing template
+
+
 @app.route('/')
 def home():
-	return render_template('draw.html')
+    return render_template('draw.html')
+    
+from PIL import Image
+import cv2
+import io
+import matplotlib.pyplot as plt
+def string_to_img(base64_string):
+    imgdata = base64.b64decode(str(base64_string))
+    img = np.array(Image.open(io.BytesIO(imgdata)))
+    resized = cv2.resize(img, (28,28), interpolation = cv2.INTER_AREA)
+    img = np.asarray(resized, dtype="uint8")
+    img = 255-img
+    return img
 
-
-
-#Second route : Use our model to make prediction - render the results page.
-@app.route('/predict', methods=['POST'])
+# Second route : Use our model to make prediction - render the results page.
+@app.route('/api/predict', methods=['POST'])
 def predict():
-        global graph
-        with graph.as_default():
-            if request.method == 'POST':
-                    final_pred = None
-                    #Preprocess the image : set the image to 28x28 shape
-                    #Access the image
-                    draw = request.form['url']
-                    #Removing the useless part of the url.
-                    draw = draw[init_Base64:]
-                    #Decoding
-                    draw_decoded = base64.b64decode(draw)
-                    image = np.asarray(bytearray(draw_decoded), dtype="uint8")
-                    image = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
-                    #Resizing and reshaping to keep the ratio.
-                    resized = cv2.resize(image, (28,28), interpolation = cv2.INTER_AREA)
-                    vect = np.asarray(resized, dtype="uint8")
-                    vect = vect.reshape(1, 1, 28, 28).astype('float32')
-                    #Launch prediction
-                    my_prediction = model.predict(vect)
-                    #Getting the index of the maximum prediction
-                    index = np.argmax(my_prediction[0])
-                    #Associating the index and its value within the dictionnary
-                    final_pred = label_dict[index]
+    if request.method == 'POST':
+        draw = request.form['url']
+        # Removing the useless part of the url.
+        draw = draw[init_Base64:]
+        # Decoding
+        img = string_to_img(draw)
+       
+        image_path = 'image.jpg'
+        cv2.imwrite(image_path, img)
 
-        return render_template('results.html', prediction =final_pred)
+        model = replicate.models.get("vganapati/mnist-classification")
+        version = model.versions.get(
+            "f3d94d920835d9ae085f0f0eb2ed8ff9f9771554e382af11e83cd79f1a646cb7"
+        )
+        prediction = replicate.predictions.create(
+            version=version,
+            input={
+                "input":Path(image_path)
+            },
+        )
+
+        prediction = replicate.predictions.get(prediction.id)
+        output = None
+        if prediction.output:
+            output = prediction.output[0]['text']
+
+
+    return render_template('results.html', prediction=output)
 
 
 if __name__ == '__main__':
-	app.run(debug=True)
+    app.run(debug=True)

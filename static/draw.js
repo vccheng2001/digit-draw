@@ -4,7 +4,7 @@ var clickX = new Array();
 var clickY = new Array();
 var clickDrag = new Array();
 var paint = false;
-var curColor = "#FF5733";
+var curColor = "#000000";
 
 
 /**
@@ -14,6 +14,10 @@ function drawCanvas() {
 
     canvas = document.getElementById('canvas');
     context = document.getElementById('canvas').getContext("2d");
+
+    context.fillStyle = '#ffffff';  /// set white fill style
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
 
     $('#canvas').mousedown(function (e) {
         var mouseX = e.pageX - this.offsetLeft;
@@ -52,9 +56,12 @@ function addClick(x, y, dragging) {
 function redraw() {
     
     context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
+    context.fillStyle = '#ffffff';  /// set white fill style
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
     context.strokeStyle = curColor;
     context.lineJoin = "round";
-    context.lineWidth = 3;
+    context.lineWidth = 15;
 for (var i = 0; i < clickX.length; i++) {
     context.beginPath();
     if (clickDrag[i] && i) {
@@ -77,6 +84,7 @@ function save() {
     var url = document.getElementById('url');
     image.id = "pic";
     image.src = canvas.toDataURL();
+    console.log(image.src);
     url.value = image.src;
 
 }
