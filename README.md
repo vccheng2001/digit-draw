@@ -1,10 +1,20 @@
-# Flask-Cnn-Recognition-App
-Flask Drawing Recognition Application based on CNN model
+# Digit Draw
 
-This project is related with this article in towardDataScience : 
-https://towardsdatascience.com/develop-an-interactive-drawing-recognition-app-based-on-cnn-deploy-it-with-flask-95a805de10c0
+This program uses a pretrained MNIST Classification model to predict a user-drawn digit through Flask.
 
-It aims to deploy a Deep Learning Model using Flask.
+<img src="images/demo.png">
 
-Hugo Mallet
+
+## Setup
+
+```bash
+conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+pip install -r requirements.txt
+
+flask run
+```
+Then, go to http://127.0.0.1:5000.
+
+## Usage
+Draw a number and click "predict" to see the prediction!
 
